@@ -1,0 +1,20 @@
+{
+  "name": "2021-mep_lobbying",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "update-data": "cd python && python 2021-mep_lobbying.py",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ebuddj/2021-mep_lobbying.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ebuddj/2021-mep_lobbying/issues"
+  },
+  "homepage": "https://github.com/ebuddj/2021-mep_lobbying#readme"
+}
