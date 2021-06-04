@@ -66,7 +66,8 @@ if (len(sys.argv) > 1 and sys.argv[1] == 'true'):
     data = {}
     for item in mep:
       data[item.tag] = item.text
-    data['fetched'] = ''
+    data['fetched'] = 0
+    data['has_data'] = False
     db_meps.insert_one(data)
 else:
   print('\033[1mUsing existing mep data from db.\033[0m\n')
@@ -82,61 +83,72 @@ from datetime import datetime
 
 # Limit which members we crawl by how old is the data or fetch data for all.
 if (len(sys.argv) > 2): 
-  query = {fetched:{$gt:sys.argv}}
+  query = {fetched:{'$gt':sys.argv}}
 else:
   query = {}
-for mep in db_meps.find(query):
-  # Remove all previous data because meetings don't have a unique identifier at source.
-  db_meetings.delete_many({mep_id: mep['id']})
-  page = 1
-  meeting_id = 0
-  # Go through pages until we have data.
-  while True:
-    # See https://www.europarl.europa.eu/meps/en/124726/HENNA_VIRKKUNEN/meetings/past#detailedcardmep
-    # Henna Virkkunen
-    mep['id'] = '124726'
-    url = 'https://www.europarl.europa.eu/meps/en/loadmore-meetings/past/' + mep['id'] + '?slice=' + str(page)
-    req = Request(url)
-    req.add_header('User-Agent', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:77.0) Gecko/20100101 Firefox/77.0')
-    content = urlopen(req)
-    soup = BeautifulSoup(content.read(), 'html.parser')
-    # Loop through meetings of single page if there are any.
-    if (len(soup.find_all(class_ = 'erpl_meps-activity')) > 0):
-      data = {}
-      for meeting in soup.find_all(class_ = 'erpl_meps-activity'):
-        # Store the data in variable.
-        data['topic'] = meeting.find(class_ = 't-item').getText().strip()
-        data['time'] = meeting.find('time').getText().strip()
-        [x.extract() for x in meeting.select('time')]
-        data['location'] = ' '.join(meeting.find(class_ = 'erpl_subtitle').getText().split()).replace('- ', '').replace('-', '')
-        if (meeting.find(class_ = 'erpl_badge')):
-          data['committee'] = meeting.find(class_ = 'erpl_badge').getText().strip()
-          [x.extract() for x in meeting.select('span.badges')]
-        else:
-          data['committee'] = ''
-        data['rapporteur'] = ' '.join(meeting.find(class_ = 'erpl_report').getText().split())
-        data['meeting_id'] = meeting_id
-        data['mep_id'] = mep['id']
-        for lobbyist in meeting.find(class_ = 'erpl_rapporteur').getText().strip().split(','):
-          data['lobbyist'] = lobbyist.strip()
-          data['_id'] = ObjectId() 
-          db_meetings.insert_one(data)
-        # Make a meeting id.
-        meeting_id = meeting_id + 1
+  query = {'id':'197802'}
 
-      print ('Page' + str(page) + ' ... done!')
-      page = page + 1
-    # If done with pages or no meetings what so ever.
-    else:
-      print (mep['fullName'] + '(' + mep['id'] + ') ... done!')
-      if (page > 1):
-        db_meps.update_one({'id': mep['id']}, {'$set': { 'fetched': str(datetime.now())}})
+with open('./../data/data.csv', 'w') as csvfile:
+  # Import csv for writing csv.
+  import csv
+  csv_writer = csv.writer(csvfile, delimiter=',',quotechar='"', quoting=csv.QUOTE_MINIMAL)
+  csv_writer.writerow(['mep_id', 'fullName', 'country', 'politicalGroup', 'nationalPoliticalGroup', 'meeting_id', 'topic', 'date', 'location','committee', 'position', 'lobbyist'])
+  for mep in db_meps.find(query):
+    # Remove all previous data because meetings don't have a unique identifier at source.
+    db_meetings.delete_many({'mep_id': mep['id']})
+    page = 1
+    meeting_id = 0
+    # Go through pages until we have data.
+    while True:
+      # See https://www.europarl.europa.eu/meps/en/124726/HENNA_VIRKKUNEN/meetings/past#detailedcardmep
+      # Henna Virkkunen 124726
+      # Ville Niinistö 197802
+      # Ska Keller 96734
+      # Irene Tinagli 197591
+      mep['id'] = '197802'
+
+      url = 'https://www.europarl.europa.eu/meps/en/loadmore-meetings/past/' + mep['id'] + '?slice=' + str(page)
+      req = Request(url)
+      req.add_header('User-Agent', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:77.0) Gecko/20100101 Firefox/77.0')
+      content = urlopen(req)
+      soup = BeautifulSoup(content.read(), 'html.parser')
+      # Loop through meetings of single page if there are any.
+      if (len(soup.find_all(class_ = 'erpl_meps-activity')) > 0):
+        data = {}
+        for meeting in soup.find_all(class_ = 'erpl_meps-activity'):
+          # Store the data in variable.
+          data['topic'] = meeting.find(class_ = 't-item').getText().strip()
+          data['date'] = meeting.find('time').getText().strip()
+          [x.extract() for x in meeting.select('time')]
+          data['location'] = ' '.join(meeting.find(class_ = 'erpl_subtitle').getText().split()).replace('- ', '').replace('-', '')
+          if (meeting.find(class_ = 'erpl_badge')):
+            data['committee'] = []
+            for badge in meeting.find_all(class_ = 'erpl_badge'):
+              data['committee'].append(badge.getText().strip())
+            data['committee'] = ','.join(data['committee'])
+            [x.extract() for x in meeting.select('span.badges')]
+          else:
+            data['committee'] = ''
+          data['position'] = ' '.join(meeting.find(class_ = 'erpl_report').getText().split())
+          data['meeting_id'] = mep['id'] + '_' + str(meeting_id)
+          data['mep_id'] = mep['id']
+          for lobbyist in meeting.find(class_ = 'erpl_rapporteur').getText().strip().split(','):
+            data['lobbyist'] = lobbyist.strip()
+            data['_id'] = ObjectId() 
+            db_meetings.insert_one(data)
+          # Make a meeting id.
+          meeting_id = meeting_id + 1
+          # ['mep_id', 'fullName', 'country', 'politicalGroup', 'nationalPoliticalGroup', 'meeting_id', 'topic', 'date', 'location','committee', 'position', 'lobbyist']
+          csv_writer.writerow([data['mep_id'], mep['fullName'], mep['country'], mep['politicalGroup'], mep['nationalPoliticalGroup'], data['meeting_id'], data['topic'], data['date'], data['location'], data['committee'], data['position'], data['lobbyist']])
+        print ('Page' + str(page) + ' ... done!')
+        page = page + 1
+        # break
+      # If done with pages or no meetings what so ever.
       else:
-        db_meps.update_one({'id': mep['id']}, {'$set': { 'fetched': '0'}})
-      break
-  break
-
-# with open('clean/00_' + file_type + '.csv', 'wb') as csvfile:
-#   csv_writer = csv.writer(csvfile, delimiter=',',quotechar='"', quoting=csv.QUOTE_MINIMAL)
-#   csv_writer.writerow([''])
-#   csv_writer.writerow([mep['name'].encode('utf-8')])
+        print (mep['fullName'] + '(' + mep['id'] + ') ... done!')
+        db_meps.update_one({'id': mep['id']}, {'$set': { 'fetched': str(datetime.now())}})
+        if (page > 1):
+          db_meps.update_one({'id': mep['id']}, {'$set': { 'has_data': True}})
+        else:
+          db_meps.update_one({'id': mep['id']}, {'$set': { 'has_data': False}})
+        break
