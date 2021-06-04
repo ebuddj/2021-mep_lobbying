@@ -86,7 +86,12 @@ if (len(sys.argv) > 2):
   query = {fetched:{'$gt':sys.argv}}
 else:
   query = {}
-  query = {'id':'197802'}
+  # See https://www.europarl.europa.eu/meps/en/124726/HENNA_VIRKKUNEN/meetings/past#detailedcardmep
+  # Henna Virkkunen 124726
+  # Ville Niinistö 197802
+  # Ska Keller 96734
+  # Irene Tinagli 197591
+  # query = {'id':'197591'}
 
 with open('./../data/data.csv', 'w') as csvfile:
   # Import csv for writing csv.
@@ -100,13 +105,6 @@ with open('./../data/data.csv', 'w') as csvfile:
     meeting_id = 0
     # Go through pages until we have data.
     while True:
-      # See https://www.europarl.europa.eu/meps/en/124726/HENNA_VIRKKUNEN/meetings/past#detailedcardmep
-      # Henna Virkkunen 124726
-      # Ville Niinistö 197802
-      # Ska Keller 96734
-      # Irene Tinagli 197591
-      mep['id'] = '197802'
-
       url = 'https://www.europarl.europa.eu/meps/en/loadmore-meetings/past/' + mep['id'] + '?slice=' + str(page)
       req = Request(url)
       req.add_header('User-Agent', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:77.0) Gecko/20100101 Firefox/77.0')
