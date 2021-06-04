@@ -149,4 +149,5 @@ with open('./../data/data.csv', 'w') as csvfile:
           db_meps.update_one({'id': mep['id']}, {'$set': { 'has_data': True}})
         else:
           db_meps.update_one({'id': mep['id']}, {'$set': { 'has_data': False}})
+        # Jump to next Mep
         break
