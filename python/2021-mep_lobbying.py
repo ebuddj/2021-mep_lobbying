@@ -66,6 +66,7 @@ if (len(sys.argv) > 1 and sys.argv[1] == 'true'):
   for mep in meps:
     data = {}
     for item in mep:
+      # {'fullName': 'Christian EHLER', 'country': 'Germany', 'politicalGroup': "Group of the European People's Party (Christian Democrats)", 'id': '28226', 'nationalPoliticalGroup': 'Christlich Demokratische Union Deutschlands', 'fetched': '0', 'has_data': False}
       data[item.tag] = item.text
     data['fetched'] = '0'
     data['has_data'] = False
@@ -97,12 +98,14 @@ else:
   # query = {'id':'197591'}
   print('Fetching data for ' + str(db_meps.count_documents(query)) + ' meps')
 fetched = 0
+
+# Go through the meps on by one.
 for mep in db_meps.find(query):
   # Remove all previous data because meetings don't have a unique identifier at source.
   db_meetings.delete_many({'mep_id': mep['id']})
   page = 1
   meeting_id = 0
-  # Go through pages as long as we have data.
+  # Go through pages one by one as long as we have data.
   while True:
     url = 'https://www.europarl.europa.eu/meps/en/loadmore-meetings/past/' + mep['id'] + '?slice=' + str(page)
     req = Request(url)
