@@ -12,7 +12,7 @@ See: https://www.integritywatch.eu/mepmeetings
 * 
 
 **Used by**
-* 
+* [Yle/Finland](https://yle.fi/uutiset/3-11987668)
 
 ## How to use
 
