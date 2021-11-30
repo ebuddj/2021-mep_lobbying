@@ -107,7 +107,7 @@ for mep in db_meps.find(query):
   meeting_id = 0
   # Go through pages one by one as long as we have data.
   while True:
-    url = 'https://www.europarl.europa.eu/meps/en/loadmore-meetings/past/' + mep['id'] + '?slice=' + str(page)
+    url = 'https://www.europarl.europa.eu/meps/en/loadmore-meetings/past/' + mep['id'] + '?page=' + str(page)
     req = Request(url)
     req.add_header('User-Agent', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:77.0) Gecko/20100101 Firefox/77.0')
     content = urlopen(req)
